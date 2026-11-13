@@ -2,12 +2,12 @@
 
 #include <fstream>
 #include <iostream>
-#include <pthread.h>
 #include <sstream>
 #include <string>
-#include <iomanip>
 
 MemoryMetrics collect_mem() {
+    bool found_total = false;
+    bool found_available = false;
     MemoryMetrics mm_unit;
     std::ifstream file("/proc/meminfo");
     if (!file.is_open()) {
@@ -16,23 +16,27 @@ MemoryMetrics collect_mem() {
     }
     std::string line;
     std::string key;
-    double value;
+    std::uint64_t value{};
     std::string unit;
     while (std::getline(file, line)) {
         std::istringstream iss(line);
-        iss >> key >> value >> unit;
+        if (!(iss>>key>>value)) {
+            continue;
+        }
         if (key == "MemTotal:") {
+            found_total = true;
             mm_unit.total_kb = value;
         }
         if (key == "MemAvailable:") {
-            mm_unit.avaliable_kb = value;
+            found_available = true;
+            mm_unit.available_kb = value;
         }
     }
-    if (mm_unit.total_kb <= 0) {
+    if (!found_total || !found_available) {
         std::cout << "memtotal is zero" << '\n';
+        return {};
     } else {
-        mm_unit.usage_percent = static_cast<double>((mm_unit.total_kb - mm_unit.avaliable_kb)) / mm_unit.total_kb * 100;
-        std::cout << std::fixed << std::setprecision(2) << mm_unit.usage_percent << '%' << '\n';
+        mm_unit.usage_percent = static_cast<double>((mm_unit.total_kb - mm_unit.available_kb)) / mm_unit.total_kb * 100;
     }
     return mm_unit;
 }
