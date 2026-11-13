@@ -1,5 +1,5 @@
 #pragma once
 
-#include <string>
 
-void collect_mem(const std::string& line);
+
+void collect_mem();
